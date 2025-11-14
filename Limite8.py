@@ -12,6 +12,22 @@ st.markdown("""
         background-color: #f2f2f2;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+
+    /* CORREÇÃO: texto estava invisível no Streamlit Cloud */
+    .legenda-status span,
+    .legenda-status h4,
+    .legenda-status div {
+        color: #333333 !important;
+    }
+
+    div[style*="background:white"] {
+        color: #333333 !important;
+    }
+
+    div[style*="background:white"] strong {
+        color: #000000 !important;
+    }
+
     .metric-container {
         background-color: white;
         border-radius: 15px;
