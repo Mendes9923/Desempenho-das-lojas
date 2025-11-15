@@ -281,30 +281,45 @@ df_grafico = (df_filtrado.groupby('Status')[['Vencido', 'A_Vencer', 'Disponivel'
 
 df_long = pd.melt(df_grafico, id_vars='Status', var_name='Tipo', value_name='Valor')
 
-fig = px.bar(df_long, 
-             x='Status', 
-             y='Valor', 
-             color='Tipo', 
-             barmode='group',
-             color_discrete_map={
-                 "Vencido": "#ef5b25", 
-                 "A_Vencer": "#ff9800", 
-                 "Disponivel": "#4caf50"
-             },
-             height=500,
-             title="Comparação de Valores por Status do Cliente")
+# Paleta Sky Group oficialmente aplicada
+paleta_sky = {
+    "Vencido": "#E85413",     # Laranja SKY
+    "A_Vencer": "#FF9800",    # Laranja claro
+    "Disponivel": "#4CAF50"   # Verde
+}
 
+fig = px.bar(
+    df_long,
+    x='Status',
+    y='Valor',
+    color='Tipo',
+    barmode='group',
+    color_discrete_map=paleta_sky,
+    height=520,
+    title="Comparação de Valores por Status do Cliente"
+)
+
+# Layout reforçado para leitura e impressão
 fig.update_layout(
     plot_bgcolor='white',
     paper_bgcolor='white',
-    font=dict(size=12),
+    font=dict(size=14, color='black'),
     xaxis_title="Status do Cliente",
     yaxis_title="Valor (R$)",
-    legend_title="Tipo de Valor"
+    legend_title="Tipo de Valor",
+    xaxis=dict(showgrid=False),
+    yaxis=dict(showgrid=True, gridcolor="#e0e0e0")
 )
 
-# Formatar eixos Y em R$
+# Formatar Y em R$
 fig.update_yaxes(tickprefix="R$ ", tickformat=",.2f")
+
+# 🔥 Labels de valor acima de cada barra – 100% visível
+fig.update_traces(
+    text=df_long['Valor'].map(lambda v: f"R$ {v:,.2f}"),
+    textposition="outside",
+    textfont=dict(size=12, color="black")
+)
 
 st.plotly_chart(fig, use_container_width=True)
 
@@ -454,41 +469,51 @@ if 'TM' in df_filtrado.columns:
     # --- Gráfico de Linha ---
     st.markdown("### 📈 Gráfico de Vencido e A Vencer por Faixa de Tempo de Mercado")
 
-    import plotly.graph_objects as go
+import plotly.graph_objects as go
 
-    fig_tm = go.Figure()
+fig_tm = go.Figure()
 
-    fig_tm.add_trace(go.Scatter(
-        x=resumo_tm['Faixa_Tempo'],
-        y=resumo_tm['Vencido'],
-        mode='lines+markers',
-        name='Vencido',
-        line=dict(width=3, color='#ef5b25')
-    ))
+# Linha Vencido (Laranja Sky Group)
+fig_tm.add_trace(go.Scatter(
+    x=resumo_tm['Faixa_Tempo'],
+    y=resumo_tm['Vencido'],
+    mode='lines+markers+text',
+    name='Vencido',
+    line=dict(width=4, color='#E85413'),  # Laranja SKY
+    marker=dict(size=8, color='#E85413'),
+    text=[f"R$ {v:,.2f}" for v in resumo_tm['Vencido']],
+    textposition="top center",
+    textfont=dict(color="black", size=12)
+))
 
-    fig_tm.add_trace(go.Scatter(
-        x=resumo_tm['Faixa_Tempo'],
-        y=resumo_tm['A_Vencer'],
-        mode='lines+markers',
-        name='A Vencer',
-        line=dict(width=3, color='#ff9800')
-    ))
+# Linha A Vencer (Laranja Claro Sky)
+fig_tm.add_trace(go.Scatter(
+    x=resumo_tm['Faixa_Tempo'],
+    y=resumo_tm['A_Vencer'],
+    mode='lines+markers+text',
+    name='A Vencer',
+    line=dict(width=4, color='#FF9800'),  # Laranja Claro SKY
+    marker=dict(size=8, color='#FF9800'),
+    text=[f"R$ {v:,.2f}" for v in resumo_tm['A_Vencer']],
+    textposition="top center",
+    textfont=dict(color="black", size=12)
+))
 
-    fig_tm.update_layout(
-        title="Evolução de Valores por Tempo de Mercado",
-        xaxis_title="Faixa de Tempo de Mercado",
-        yaxis_title="Valor (R$)",
-        yaxis_tickprefix="R$ ",
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        font=dict(size=12),
-        hovermode="x unified"
-    )
+# Layout melhorado para visualização e impressão
+fig_tm.update_layout(
+    title="Evolução de Valores por Tempo de Mercado",
+    xaxis_title="Faixa de Tempo de Mercado",
+    yaxis_title="Valor (R$)",
+    yaxis_tickprefix="R$ ",
+    plot_bgcolor='white',
+    paper_bgcolor='white',
+    font=dict(size=14, color="black"),
+    hovermode="x unified",
+    xaxis=dict(showgrid=False),
+    yaxis=dict(showgrid=True, gridcolor="#dddddd")
+)
 
-    st.plotly_chart(fig_tm, use_container_width=True)
-
-else:
-    st.warning("⚠️ Coluna 'T.M' não encontrada no arquivo.")
+st.plotly_chart(fig_tm, use_container_width=True)
 
 # --- Rankings ---
 st.markdown("<div class='section-header'>🏆 Rankings</div>", unsafe_allow_html=True)
