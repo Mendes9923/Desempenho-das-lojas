@@ -8,28 +8,44 @@ st.set_page_config(page_title="Dashboard Sky Group", layout="wide")
 # --- CSS personalizado ---
 st.markdown("""
     <style>
+    /* ======== PALETA SKY GROUP ======== */
+    :root {
+        --sky-orange: #ef5b25;
+        --sky-orange-light: #ff9800;
+        --sky-yellow: #ffc107;
+        --sky-green: #4caf50;
+        --text-dark: #333333;
+        --text-medium: #666666;
+        --bg-light: #f2f2f2;
+        --white: #ffffff;
+    }
+
     .main, .block-container {
-        background-color: #f2f2f2;
+        background-color: var(--bg-light);
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-dark);
     }
 
-    /* CORREÇÃO: texto estava invisível no Streamlit Cloud */
-    .legenda-status span,
-    .legenda-status h4,
-    .legenda-status div {
-        color: #333333 !important;
+    .header-title {
+        color: var(--sky-orange);
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+        font-weight: 700;
     }
 
-    div[style*="background:white"] {
-        color: #333333 !important;
-    }
-
-    div[style*="background:white"] strong {
-        color: #000000 !important;
+    .section-header {
+        color: var(--text-dark);
+        margin-top: 30px;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        font-weight: 600;
+        border-left: 5px solid var(--sky-orange);
+        padding-left: 15px;
     }
 
     .metric-container {
-        background-color: white;
+        background-color: var(--white);
         border-radius: 15px;
         padding: 20px;
         text-align: center;
@@ -42,49 +58,44 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.15);
     }
+
     .metric-value {
         font-size: 28px;
         font-weight: bold;
-        color: #333333;
+        color: var(--text-dark);
         margin-bottom: 5px;
     }
+
     .metric-label {
         font-size: 14px;
-        color: #666666;
+        color: var(--text-medium);
         font-weight: 500;
     }
-    .header-title {
-        color: #ef5b25;
-        text-align: center;
-        margin-bottom: 30px;
-        font-size: 2.5em;
-        font-weight: 700;
-    }
-    .section-header {
-        color: #333333;
-        margin-top: 30px;
-        margin-bottom: 20px;
-        font-size: 1.5em;
-        font-weight: 600;
-        border-left: 5px solid #ef5b25;
-        padding-left: 15px;
-    }
+
     .footer {
         text-align: center;
         padding: 20px;
         background: #e0e0e0;
         margin-top: 40px;
         border-radius: 10px;
-        color: #666666;
+        color: var(--text-medium);
         font-weight: 500;
     }
+
     .legenda-status {
-        background: white;
+        background: var(--white);
         padding: 15px;
         border-radius: 10px;
         margin: 20px 0;
         box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+        color: var(--text-dark);
     }
+
+    /* Ícones da legenda com a paleta Sky */
+    .legenda-status .ruim { background-color: var(--sky-orange); }
+    .legenda-status .regular { background-color: var(--sky-orange-light); }
+    .legenda-status .bom { background-color: var(--sky-yellow); }
+    .legenda-status .otimo { background-color: var(--sky-green); }
     </style>
 """, unsafe_allow_html=True)
 
