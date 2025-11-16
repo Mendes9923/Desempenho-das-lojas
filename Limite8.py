@@ -273,19 +273,21 @@ st.markdown("""
 st.markdown("<div class='section-header'>📊 Gráfico Comparativo por Status</div>", unsafe_allow_html=True)
 
 ordem_status = ['Ruim', 'Regular', 'Bom', 'Ótimo']
-df_grafico = (df_filtrado.groupby('Status')[['Vencido', 'A_Vencer', 'Disponivel']]
-              .sum()
-              .reindex(ordem_status)
-              .fillna(0)
-              .reset_index())
+df_grafico = (
+    df_filtrado.groupby('Status')[['Vencido', 'A_Vencer', 'Disponivel']]
+    .sum()
+    .reindex(ordem_status)
+    .fillna(0)
+    .reset_index()
+)
 
 df_long = pd.melt(df_grafico, id_vars='Status', var_name='Tipo', value_name='Valor')
 
-# Paleta Sky Group oficialmente aplicada
+# Paleta oficial Sky Group
 paleta_sky = {
-    "Vencido": "#E85413",     # Laranja SKY
+    "Vencido": "#E85413",     # Laranja Sky
     "A_Vencer": "#FF9800",    # Laranja claro
-    "Disponivel": "#4CAF50"   # Verde
+    "Disponivel": "#4CAF50"   # Verde Sky
 }
 
 fig = px.bar(
@@ -299,22 +301,34 @@ fig = px.bar(
     title="Comparação de Valores por Status do Cliente"
 )
 
-# Layout reforçado para leitura e impressão
+# Layout atualizado para alta visibilidade
 fig.update_layout(
     plot_bgcolor='white',
     paper_bgcolor='white',
     font=dict(size=14, color='black'),
-    xaxis_title="Status do Cliente",
-    yaxis_title="Valor (R$)",
-    legend_title="Tipo de Valor",
-    xaxis=dict(showgrid=False),
-    yaxis=dict(showgrid=True, gridcolor="#e0e0e0")
+    title=dict(text="Comparação de Valores por Status do Cliente", font=dict(size=20, color="black")),
+    
+    xaxis=dict(
+        title=dict(text="Status do Cliente", font=dict(size=16, color="black")),
+        tickfont=dict(size=14, color="black"),
+        showgrid=False
+    ),
+    yaxis=dict(
+        title=dict(text="Valor (R$)", font=dict(size=16, color="black")),
+        tickprefix="R$ ",
+        tickformat=",.2f",
+        tickfont=dict(size=14, color="black"),
+        showgrid=True,
+        gridcolor="#D0D0D0"
+    ),
+    
+    legend=dict(
+        title=dict(text="Tipo de Valor", font=dict(size=14, color="black")),
+        font=dict(size=14, color="black")
+    )
 )
 
-# Formatar Y em R$
-fig.update_yaxes(tickprefix="R$ ", tickformat=",.2f")
-
-# 🔥 Labels de valor acima de cada barra – 100% visível
+# Labels de valor acima das barras
 fig.update_traces(
     text=df_long['Valor'].map(lambda v: f"R$ {v:,.2f}"),
     textposition="outside",
@@ -467,7 +481,7 @@ if 'TM' in df_filtrado.columns:
         """, unsafe_allow_html=True)
 
     # --- Gráfico de Linha ---
-    st.markdown("### 📈 Gráfico de Vencido e A Vencer por Faixa de Tempo de Mercado")
+st.markdown("### 📈 Gráfico de Vencido e A Vencer por Faixa de Tempo de Mercado")
 
 import plotly.graph_objects as go
 
@@ -483,7 +497,7 @@ fig_tm.add_trace(go.Scatter(
     marker=dict(size=8, color='#E85413'),
     text=[f"R$ {v:,.2f}" for v in resumo_tm['Vencido']],
     textposition="top center",
-    textfont=dict(color="black", size=12)
+    textfont=dict(color="black", size=13)
 ))
 
 # Linha A Vencer (Laranja Claro Sky)
@@ -496,21 +510,40 @@ fig_tm.add_trace(go.Scatter(
     marker=dict(size=8, color='#FF9800'),
     text=[f"R$ {v:,.2f}" for v in resumo_tm['A_Vencer']],
     textposition="top center",
-    textfont=dict(color="black", size=12)
+    textfont=dict(color="black", size=13)
 ))
 
-# Layout melhorado para visualização e impressão
+# Layout atualizado com fontes visíveis
 fig_tm.update_layout(
-    title="Evolução de Valores por Tempo de Mercado",
-    xaxis_title="Faixa de Tempo de Mercado",
-    yaxis_title="Valor (R$)",
-    yaxis_tickprefix="R$ ",
-    plot_bgcolor='white',
-    paper_bgcolor='white',
+    title=dict(
+        text="Evolução de Valores por Tempo de Mercado",
+        font=dict(size=20, color="black")
+    ),
+    xaxis=dict(
+        title=dict(
+            text="Faixa de Tempo de Mercado",
+            font=dict(size=16, color="black")
+        ),
+        tickfont=dict(size=14, color="black"),
+        showgrid=False
+    ),
+    yaxis=dict(
+        title=dict(
+            text="Valor (R$)",
+            font=dict(size=16, color="black")
+        ),
+        tickprefix="R$ ",
+        tickfont=dict(size=14, color="black"),
+        showgrid=True,
+        gridcolor="#CCCCCC"
+    ),
     font=dict(size=14, color="black"),
+    plot_bgcolor="white",
+    paper_bgcolor="white",
     hovermode="x unified",
-    xaxis=dict(showgrid=False),
-    yaxis=dict(showgrid=True, gridcolor="#dddddd")
+    legend=dict(
+        font=dict(color="black", size=14)
+    )
 )
 
 st.plotly_chart(fig_tm, use_container_width=True)
