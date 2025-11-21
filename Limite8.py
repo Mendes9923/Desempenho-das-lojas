@@ -2,8 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from io import BytesIO
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="Dashboard Sky Group", layout="wide")
+
+# Função para formatar valores monetários (mantida aqui para ser global)
+def formatar_moeda(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- CSS personalizado ---
 st.markdown("""
@@ -144,6 +149,29 @@ def carregar_dados():
             if coluna in df.columns:
                 df[coluna] = pd.to_numeric(df[coluna], errors='coerce').fillna(0)
         
+        # --- OTIMIZAÇÃO: TRATAMENTO E CLASSIFICAÇÃO DA COLUNA TM (Tempo de Mercado) ---
+        if 'TM' in df.columns:
+            # Extrair apenas números e converter para float
+            df['TM_clean'] = df['TM'].astype(str).str.extract(r'(\d+(?:,\d+)?)')[0].str.replace(',', '.').astype(float)
+
+            # Criar faixas de tempo de mercado
+            def classificar_tempo_mercado(valor):
+                if pd.isna(valor):
+                    return "Não informado"
+                elif valor <= 2:
+                    return "0–2 anos"
+                elif valor <= 5:
+                    return "3–5 anos"
+                elif valor <= 10:
+                    return "6–10 anos"
+                elif valor <= 20:
+                    return "11–20 anos"
+                else:
+                    return "Acima de 20 anos"
+
+            df['Faixa_Tempo'] = df['TM_clean'].apply(classificar_tempo_mercado)
+            df.drop(columns=['TM_clean'], inplace=True, errors='ignore') # Remove coluna temporária
+
         return df
         
     except FileNotFoundError:
@@ -202,10 +230,6 @@ avencer_total = df_filtrado['A_Vencer'].sum()
 disponivel_total = df_filtrado['Disponivel'].sum()
 total_carteira = vencido_total + avencer_total
 inad_pct = (vencido_total / total_carteira * 100) if total_carteira else 0
-
-# Função para formatar valores monetários
-def formatar_moeda(valor):
-    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -315,12 +339,8 @@ fig.update_layout(
 # Formatar Y em R$
 fig.update_yaxes(tickprefix="R$ ", tickformat=",.2f")
 
-# 🔥 Labels de valor acima de cada barra – CORREÇÃO PARA LABELS ÚNICAS
+# 🔥 Labels de valor acima de cada barra 
 for i, trace in enumerate(fig.data):
-    # O Plotly Express organiza as traces na ordem em que aparecem no 'Tipo' (coluna 'color')
-    # O df_long está na ordem: [Vencido, Vencido, Vencido, Vencido, A_Vencer, A_Vencer, ...]
-    
-    # Obtemos apenas os valores que correspondem à trace atual
     tipo = trace.name
     valores_trace = df_long[df_long['Tipo'] == tipo]['Valor']
 
@@ -328,7 +348,7 @@ for i, trace in enumerate(fig.data):
         text=[f"R$ {v:,.2f}" for v in valores_trace],
         textposition="outside",
         textfont=dict(size=12, color="black"),
-        selector=dict(name=tipo) # Aplica a atualização APENAS a esta trace
+        selector=dict(name=tipo) 
     )
 
 st.plotly_chart(fig, use_container_width=True)
@@ -405,39 +425,21 @@ with col4:
 # --- Análise por Tempo de Mercado ---
 st.markdown("<div class='section-header'>⏳ Análise por Tempo de Mercado</div>", unsafe_allow_html=True)
 
-if 'TM' in df_filtrado.columns:
+# A coluna 'Faixa_Tempo' agora é criada DENTRO de carregar_dados()
+if 'Faixa_Tempo' in df_filtrado.columns:
+    # Usamos uma cópia para criar as flags de clientes (Vencido e A Vencer)
     df_tm = df_filtrado.copy()
-
-    # Extrair apenas números e converter para float
-    df_tm['TM'] = df_tm['TM'].astype(str).str.extract(r'(\d+(?:,\d+)?)')[0].str.replace(',', '.').astype(float)
-
-    # Criar faixas de tempo de mercado
-    def classificar_tempo_mercado(valor):
-        if pd.isna(valor):
-            return "Não informado"
-        elif valor <= 2:
-            return "0–2 anos"
-        elif valor <= 5:
-            return "3–5 anos"
-        elif valor <= 10:
-            return "6–10 anos"
-        elif valor <= 20:
-            return "11–20 anos"
-        else:
-            return "Acima de 20 anos"
-
-    df_tm['Faixa_Tempo'] = df_tm['TM'].apply(classificar_tempo_mercado)
 
     # Criar flags para clientes com valores vencidos e a vencer
     df_tm['Cliente_Vencido'] = df_tm['Vencido'] > 0
     df_tm['Cliente_Avencer'] = df_tm['A_Vencer'] > 0
 
-    # Agrupar e somar
+    # Agrupar e somar (COM O CORRETO 'nunique' PARA CLIENTES TOTAIS)
     resumo_tm = (df_tm.groupby('Faixa_Tempo')
                  .agg({
                      'Vencido': 'sum',
                      'A_Vencer': 'sum',
-                     'CNPJ_CPF': 'nunique',
+                     'CNPJ_CPF': 'nunique', # CORRIGIDO: Conta clientes (CNPJ/CPF) únicos na faixa
                      'Cliente_Vencido': 'sum',
                      'Cliente_Avencer': 'sum'
                  })
@@ -454,76 +456,82 @@ if 'TM' in df_filtrado.columns:
     resumo_tm['Total_Faixa'] = resumo_tm['Vencido'] + resumo_tm['A_Vencer']
     resumo_tm['% Vencido'] = (resumo_tm['Vencido'] / resumo_tm['Total_Faixa'] * 100).round(2).fillna(0)
     resumo_tm['% A_Vencer'] = (resumo_tm['A_Vencer'] / resumo_tm['Total_Faixa'] * 100).round(2).fillna(0)
+    
+    # --- OTIMIZAÇÃO: Exibição em DataFrame (substitui o loop de st.markdown) ---
+    st.markdown("### 📋 Resumo Numérico por Faixa de Tempo")
+    
+    df_exibicao_tm = resumo_tm.copy()
+    df_exibicao_tm.rename(columns={
+        'Vencido': 'Vencido (R$)',
+        'A_Vencer': 'A Vencer (R$)',
+        'Clientes_Totais': 'Total na Faixa (Clientes)',
+        'Clientes_Vencido': 'Clientes Vencidos',
+        'Clientes_Avencer': 'Clientes a Vencer',
+        '% Vencido': '% Vencido (Valor)'
+    }, inplace=True)
 
-    # Exibir os resultados faixa a faixa
-    for _, row in resumo_tm.iterrows():
-        faixa = row['Faixa_Tempo']
-        vencido = formatar_moeda(row['Vencido'])
-        avencer = formatar_moeda(row['A_Vencer'])
-        clientes_total = int(row['Clientes_Totais'])
-        clientes_venc = int(row['Clientes_Vencido'])
-        clientes_aven = int(row['Clientes_Avencer'])
-        pct_venc = row['% Vencido']
-        pct_aven = row['% A_Vencer']
+    df_exibicao_tm = df_exibicao_tm[['Faixa_Tempo', 'Vencido (R$)', 'A Vencer (R$)', '% Vencido (Valor)', 
+                                    'Total na Faixa (Clientes)', 'Clientes Vencidos', 'Clientes a Vencer']]
 
-        st.markdown(f"""
-        <div style='background:white; padding:15px; border-radius:10px; margin-bottom:10px;
-                    box-shadow:0px 2px 8px rgba(0,0,0,0.1);'>
-            <strong>📅 {faixa}</strong><br>
-            💰 <strong>Vencido:</strong> {vencido} ({pct_venc:.2f}%) — <strong>{clientes_venc}</strong> clientes<br>
-            📆 <strong>A Vencer:</strong> {avencer} ({pct_aven:.2f}%) — <strong>{clientes_aven}</strong> clientes<br>
-            👥 <strong>Total na Faixa:</strong> {clientes_total} clientes
-        </div>
-        """, unsafe_allow_html=True)
+    st.dataframe(
+        df_exibicao_tm.style.format({
+            "Vencido (R$)": "R$ {:,.2f}",
+            "A Vencer (R$)": "R$ {:,.2f}",
+            "Total na Faixa (Clientes)": "{:,.0f}",
+            "Clientes Vencidos": "{:,.0f}",
+            "Clientes a Vencer": "{:,.0f}",
+            "% Vencido (Valor)": "{:,.2f}%",
+        }).hide(axis='index'),
+        use_container_width=True
+    )
 
     # --- Gráfico de Linha ---
     st.markdown("### 📈 Gráfico de Vencido e A Vencer por Faixa de Tempo de Mercado")
 
-import plotly.graph_objects as go
+    fig_tm = go.Figure()
 
-fig_tm = go.Figure()
+    # Linha Vencido (Laranja Sky Group)
+    fig_tm.add_trace(go.Scatter(
+        x=resumo_tm['Faixa_Tempo'],
+        y=resumo_tm['Vencido'],
+        mode='lines+markers+text',
+        name='Vencido',
+        line=dict(width=4, color='#E85413'), 
+        marker=dict(size=8, color='#E85413'),
+        text=[f"R$ {v:,.2f}" for v in resumo_tm['Vencido']],
+        textposition="top center",
+        textfont=dict(color="black", size=12)
+    ))
 
-# Linha Vencido (Laranja Sky Group)
-fig_tm.add_trace(go.Scatter(
-    x=resumo_tm['Faixa_Tempo'],
-    y=resumo_tm['Vencido'],
-    mode='lines+markers+text',
-    name='Vencido',
-    line=dict(width=4, color='#E85413'),  # Laranja SKY
-    marker=dict(size=8, color='#E85413'),
-    text=[f"R$ {v:,.2f}" for v in resumo_tm['Vencido']],
-    textposition="top center",
-    textfont=dict(color="black", size=12)
-))
+    # Linha A Vencer (Verde)
+    fig_tm.add_trace(go.Scatter(
+        x=resumo_tm['Faixa_Tempo'],
+        y=resumo_tm['A_Vencer'],
+        mode='lines+markers+text',
+        name='A Vencer',
+        line=dict(width=4, color='#4CAF50'), 
+        marker=dict(size=8, color='#4CAF50'),
+        text=[f"R$ {v:,.2f}" for v in resumo_tm['A_Vencer']],
+        textposition="top center",
+        textfont=dict(color="black", size=12)
+    ))
 
-# Linha A Vencer (Verde)
-fig_tm.add_trace(go.Scatter(
-    x=resumo_tm['Faixa_Tempo'],
-    y=resumo_tm['A_Vencer'],
-    mode='lines+markers+text',
-    name='A Vencer',
-    line=dict(width=4, color='#4CAF50'),  # Verde
-    marker=dict(size=8, color='#4CAF50'),
-    text=[f"R$ {v:,.2f}" for v in resumo_tm['A_Vencer']],
-    textposition="top center",
-    textfont=dict(color="black", size=12)
-))
+    # Layout melhorado para visualização e impressão
+    fig_tm.update_layout(
+        title="Evolução de Valores por Tempo de Mercado",
+        xaxis_title="Faixa de Tempo de Mercado",
+        yaxis_title="Valor (R$)",
+        yaxis_tickprefix="R$ ",
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(size=14, color="black"),
+        hovermode="x unified",
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=True, gridcolor="#dddddd")
+    )
 
-# Layout melhorado para visualização e impressão
-fig_tm.update_layout(
-    title="Evolução de Valores por Tempo de Mercado",
-    xaxis_title="Faixa de Tempo de Mercado",
-    yaxis_title="Valor (R$)",
-    yaxis_tickprefix="R$ ",
-    plot_bgcolor='white',
-    paper_bgcolor='white',
-    font=dict(size=14, color="black"),
-    hovermode="x unified",
-    xaxis=dict(showgrid=False),
-    yaxis=dict(showgrid=True, gridcolor="#dddddd")
-)
+    st.plotly_chart(fig_tm, use_container_width=True)
 
-st.plotly_chart(fig_tm, use_container_width=True)
 
 # --- Métricas de Status da Receita ---
 st.markdown("<div class='section-header'>📊 Status da Receita</div>", unsafe_allow_html=True)
@@ -610,10 +618,10 @@ with col_rank1:
     st.markdown("**🏆 Top 10 Clientes com Maior Valor Vencido**")
     if 'CNPJ_CPF' in df_filtrado.columns:
         ranking_clientes = (df_filtrado.groupby('CNPJ_CPF')
-                           .agg({'Vencido': 'sum', 'Status': 'first'})
-                           .sort_values('Vencido', ascending=False)
-                           .head(10)
-                           .reset_index())
+                            .agg({'Vencido': 'sum', 'Status': 'first'})
+                            .sort_values('Vencido', ascending=False)
+                            .head(10)
+                            .reset_index())
         
         ranking_clientes['Posição'] = range(1, len(ranking_clientes) + 1)
         ranking_clientes = ranking_clientes[['Posição', 'CNPJ_CPF', 'Status', 'Vencido']]
