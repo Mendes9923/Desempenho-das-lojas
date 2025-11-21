@@ -273,21 +273,20 @@ st.markdown("""
 st.markdown("<div class='section-header'>📊 Gráfico Comparativo por Status</div>", unsafe_allow_html=True)
 
 ordem_status = ['Ruim', 'Regular', 'Bom', 'Ótimo']
-df_grafico = (
-    df_filtrado.groupby('Status')[['Vencido', 'A_Vencer', 'Disponivel']]
-    .sum()
-    .reindex(ordem_status)
-    .fillna(0)
-    .reset_index()
-)
+df_grafico = (df_filtrado.groupby('Status')[['Vencido', 'A_Vencer', 'Disponivel']]
+              .sum()
+              .reindex(ordem_status)
+              .fillna(0)
+              .reset_index())
 
+# Cria o DataFrame longo para o Plotly Express
 df_long = pd.melt(df_grafico, id_vars='Status', var_name='Tipo', value_name='Valor')
 
-# Paleta oficial Sky Group
+# Paleta Sky Group oficialmente aplicada
 paleta_sky = {
-    "Vencido": "#E85413",     # Laranja Sky
+    "Vencido": "#E85413",     # Laranja SKY
     "A_Vencer": "#FF9800",    # Laranja claro
-    "Disponivel": "#4CAF50"   # Verde Sky
+    "Disponivel": "#4CAF50"   # Verde
 }
 
 fig = px.bar(
@@ -301,39 +300,36 @@ fig = px.bar(
     title="Comparação de Valores por Status do Cliente"
 )
 
-# Layout atualizado para alta visibilidade
+# Layout reforçado para leitura e impressão
 fig.update_layout(
     plot_bgcolor='white',
     paper_bgcolor='white',
     font=dict(size=14, color='black'),
-    title=dict(text="Comparação de Valores por Status do Cliente", font=dict(size=20, color="black")),
-    
-    xaxis=dict(
-        title=dict(text="Status do Cliente", font=dict(size=16, color="black")),
-        tickfont=dict(size=14, color="black"),
-        showgrid=False
-    ),
-    yaxis=dict(
-        title=dict(text="Valor (R$)", font=dict(size=16, color="black")),
-        tickprefix="R$ ",
-        tickformat=",.2f",
-        tickfont=dict(size=14, color="black"),
-        showgrid=True,
-        gridcolor="#D0D0D0"
-    ),
-    
-    legend=dict(
-        title=dict(text="Tipo de Valor", font=dict(size=14, color="black")),
-        font=dict(size=14, color="black")
-    )
+    xaxis_title="Status do Cliente",
+    yaxis_title="Valor (R$)",
+    legend_title="Tipo de Valor",
+    xaxis=dict(showgrid=False),
+    yaxis=dict(showgrid=True, gridcolor="#e0e0e0")
 )
 
-# Labels de valor acima das barras
-fig.update_traces(
-    text=df_long['Valor'].map(lambda v: f"R$ {v:,.2f}"),
-    textposition="outside",
-    textfont=dict(size=12, color="black")
-)
+# Formatar Y em R$
+fig.update_yaxes(tickprefix="R$ ", tickformat=",.2f")
+
+# 🔥 Labels de valor acima de cada barra – CORREÇÃO PARA LABELS ÚNICAS
+for i, trace in enumerate(fig.data):
+    # O Plotly Express organiza as traces na ordem em que aparecem no 'Tipo' (coluna 'color')
+    # O df_long está na ordem: [Vencido, Vencido, Vencido, Vencido, A_Vencer, A_Vencer, ...]
+    
+    # Obtemos apenas os valores que correspondem à trace atual
+    tipo = trace.name
+    valores_trace = df_long[df_long['Tipo'] == tipo]['Valor']
+
+    fig.update_traces(
+        text=[f"R$ {v:,.2f}" for v in valores_trace],
+        textposition="outside",
+        textfont=dict(size=12, color="black"),
+        selector=dict(name=tipo) # Aplica a atualização APENAS a esta trace
+    )
 
 st.plotly_chart(fig, use_container_width=True)
 
@@ -481,7 +477,7 @@ if 'TM' in df_filtrado.columns:
         """, unsafe_allow_html=True)
 
     # --- Gráfico de Linha ---
-st.markdown("### 📈 Gráfico de Vencido e A Vencer por Faixa de Tempo de Mercado")
+    st.markdown("### 📈 Gráfico de Vencido e A Vencer por Faixa de Tempo de Mercado")
 
 import plotly.graph_objects as go
 
@@ -497,56 +493,113 @@ fig_tm.add_trace(go.Scatter(
     marker=dict(size=8, color='#E85413'),
     text=[f"R$ {v:,.2f}" for v in resumo_tm['Vencido']],
     textposition="top center",
-    textfont=dict(color="black", size=13)
+    textfont=dict(color="black", size=12)
 ))
 
-# Linha A Vencer (Laranja Claro Sky)
+# Linha A Vencer (Verde)
 fig_tm.add_trace(go.Scatter(
     x=resumo_tm['Faixa_Tempo'],
     y=resumo_tm['A_Vencer'],
     mode='lines+markers+text',
     name='A Vencer',
-    line=dict(width=4, color='#FF9800'),  # Laranja Claro SKY
-    marker=dict(size=8, color='#FF9800'),
+    line=dict(width=4, color='#4CAF50'),  # Verde
+    marker=dict(size=8, color='#4CAF50'),
     text=[f"R$ {v:,.2f}" for v in resumo_tm['A_Vencer']],
     textposition="top center",
-    textfont=dict(color="black", size=13)
+    textfont=dict(color="black", size=12)
 ))
 
-# Layout atualizado com fontes visíveis
+# Layout melhorado para visualização e impressão
 fig_tm.update_layout(
-    title=dict(
-        text="Evolução de Valores por Tempo de Mercado",
-        font=dict(size=20, color="black")
-    ),
-    xaxis=dict(
-        title=dict(
-            text="Faixa de Tempo de Mercado",
-            font=dict(size=16, color="black")
-        ),
-        tickfont=dict(size=14, color="black"),
-        showgrid=False
-    ),
-    yaxis=dict(
-        title=dict(
-            text="Valor (R$)",
-            font=dict(size=16, color="black")
-        ),
-        tickprefix="R$ ",
-        tickfont=dict(size=14, color="black"),
-        showgrid=True,
-        gridcolor="#CCCCCC"
-    ),
+    title="Evolução de Valores por Tempo de Mercado",
+    xaxis_title="Faixa de Tempo de Mercado",
+    yaxis_title="Valor (R$)",
+    yaxis_tickprefix="R$ ",
+    plot_bgcolor='white',
+    paper_bgcolor='white',
     font=dict(size=14, color="black"),
-    plot_bgcolor="white",
-    paper_bgcolor="white",
     hovermode="x unified",
-    legend=dict(
-        font=dict(color="black", size=14)
-    )
+    xaxis=dict(showgrid=False),
+    yaxis=dict(showgrid=True, gridcolor="#dddddd")
 )
 
 st.plotly_chart(fig_tm, use_container_width=True)
+
+# --- Métricas de Status da Receita ---
+st.markdown("<div class='section-header'>📊 Status da Receita</div>", unsafe_allow_html=True)
+
+# Contagem dos status da Receita
+contagem_receita = df_filtrado['Receita'].value_counts(dropna=False)
+status_ativo = contagem_receita.get('ATIVA', 0)
+status_inapto = contagem_receita.get('INAPTA', 0)
+status_suspenso = contagem_receita.get('SUSPENSA', 0)
+# 'Outros' (Inclui nulos e outros valores)
+status_outros = contagem_receita.sum() - (status_ativo + status_inapto + status_suspenso)
+
+# Exibição em colunas para o card
+col_receita1, col_receita2, col_receita3, col_receita4 = st.columns(4)
+
+with col_receita1:
+    st.markdown(f"""
+    <div style='
+        background-color: var(--white);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid var(--sky-green);
+        text-align: center;
+    '>
+        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>ATIVA</p>
+        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_ativo}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_receita2:
+    st.markdown(f"""
+    <div style='
+        background-color: var(--white);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid var(--sky-orange);
+        text-align: center;
+    '>
+        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>INAPTA</p>
+        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_inapto}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_receita3:
+    st.markdown(f"""
+    <div style='
+        background-color: var(--white);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid var(--sky-yellow);
+        text-align: center;
+    '>
+        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>SUSPENSA</p>
+        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_suspenso}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_receita4:
+    st.markdown(f"""
+    <div style='
+        background-color: var(--white);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid var(--text-medium);
+        text-align: center;
+    '>
+        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>OUTROS</p>
+        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_outros}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- Fim das Métricas de Status da Receita ---
 
 # --- Rankings ---
 st.markdown("<div class='section-header'>🏆 Rankings</div>", unsafe_allow_html=True)
