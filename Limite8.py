@@ -437,7 +437,7 @@ if 'TM' in df_filtrado.columns:
                  .agg({
                      'Vencido': 'sum',
                      'A_Vencer': 'sum',
-                     'CNPJ_CPF': 'count',
+                     'CNPJ_CPF': 'nunique',
                      'Cliente_Vencido': 'sum',
                      'Cliente_Avencer': 'sum'
                  })
