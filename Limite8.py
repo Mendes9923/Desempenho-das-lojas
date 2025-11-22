@@ -541,11 +541,13 @@ contagem_receita = df_filtrado['Receita'].value_counts(dropna=False)
 status_ativo = contagem_receita.get('ATIVA', 0)
 status_inapto = contagem_receita.get('INAPTA', 0)
 status_suspenso = contagem_receita.get('SUSPENSA', 0)
-# 'Outros' (Inclui nulos e outros valores)
-status_outros = contagem_receita.sum() - (status_ativo + status_inapto + status_suspenso)
+status_baixado = contagem_receita.get('BAIXADA', 0) # NOVO: Status Baixada
 
-# Exibição em colunas para o card
-col_receita1, col_receita2, col_receita3, col_receita4 = st.columns(4)
+# 'Outros' (Inclui nulos e outros valores, excluindo os contados acima)
+status_outros = contagem_receita.sum() - (status_ativo + status_inapto + status_suspenso + status_baixado)
+
+# Exibição em colunas para o card (5 COLUNAS AGORA)
+col_receita1, col_receita2, col_receita3, col_receita4, col_receita5 = st.columns(5)
 
 with col_receita1:
     st.markdown(f"""
@@ -592,7 +594,24 @@ with col_receita3:
     </div>
     """, unsafe_allow_html=True)
 
+# NOVO CARD: BAIXADA
 with col_receita4:
+    st.markdown(f"""
+    <div style='
+        background-color: var(--white);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid #6c757d; /* Cor Cinza para BAIXADA */
+        text-align: center;
+    '>
+        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>BAIXADO</p>
+        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_baixado}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+# CARD OUTROS (AGORA NA COLUNA 5)
+with col_receita5:
     st.markdown(f"""
     <div style='
         background-color: var(--white);
@@ -606,7 +625,6 @@ with col_receita4:
         <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_outros}</h2>
     </div>
     """, unsafe_allow_html=True)
-
 # --- Fim das Métricas de Status da Receita ---
 
 # --- Rankings ---
