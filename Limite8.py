@@ -602,7 +602,7 @@ with col_receita4:
         padding: 15px;
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid #6c757d; /* Cor Cinza para BAIXADA */
+        border-left: 5px solid var(--text-medium);
         text-align: center;
     '>
         <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>BAIXADO</p>
