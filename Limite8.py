@@ -104,6 +104,35 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- Funções Auxiliares (Faixas de Dívida) ---
+def classificar_divida(valor):
+    if pd.isna(valor) or valor == 0:
+        return "Nenhuma Dívida (R$ 0,00)"
+    elif valor <= 2000:
+        return "R$ 0,01 a R$ 2.000,00"
+    elif valor <= 5000:
+        return "R$ 2.000,01 a R$ 5.000,00"
+    elif valor <= 10000:
+        return "R$ 5.000,01 a R$ 10.000,00"
+    elif valor <= 50000:
+        return "R$ 10.000,01 a R$ 50.000,00"
+    elif valor <= 100000:
+        return "R$ 50.000,01 a R$ 100.000,00"
+    else:
+        return "Acima de R$ 100.000,00"
+
+ORDEM_FAIXA_DIVIDA = [
+    "R$ 0,01 a R$ 2.000,00",
+    "R$ 2.000,01 a R$ 5.000,00",
+    "R$ 5.000,01 a R$ 10.000,00",
+    "R$ 10.000,01 a R$ 50.000,00",
+    "R$ 50.000,01 a R$ 100.000,00",
+    "Acima de R$ 100.000,00",
+    "Nenhuma Dívida (R$ 0,00)"
+]
+# --- Fim Funções Auxiliares ---
+
+
 # --- Carregamento de dados com cache ---
 @st.cache_data
 def carregar_dados():
@@ -144,7 +173,7 @@ def carregar_dados():
         df['Vendedor'] = df['Vendedor'].astype(str).str.strip()
         
         # Preencher valores nulos nas colunas numéricas
-        colunas_numericas = ['Vencido', 'A_Vencer', 'Disponivel', 'Limite', 'Risk_Score']
+        colunas_numericas = ['Vencido', 'A_Vencer', 'Disponivel', 'Limite', 'Risk_Score', 'Divida'] # Adicionado 'Divida'
         for coluna in colunas_numericas:
             if coluna in df.columns:
                 df[coluna] = pd.to_numeric(df[coluna], errors='coerce').fillna(0)
@@ -171,6 +200,10 @@ def carregar_dados():
 
             df['Faixa_Tempo'] = df['TM_clean'].apply(classificar_tempo_mercado)
             df.drop(columns=['TM_clean'], inplace=True, errors='ignore') # Remove coluna temporária
+
+        # --- NOVO: Classificação por Faixa de Dívida ---
+        if 'Divida' in df.columns:
+            df['Faixa_Divida'] = df['Divida'].apply(classificar_divida)
 
         return df
         
@@ -532,6 +565,150 @@ if 'Faixa_Tempo' in df_filtrado.columns:
 
     st.plotly_chart(fig_tm, use_container_width=True)
 
+# ----------------------------------------------------------------------
+# --- NOVO: Análise por Faixa de Dívida ---
+# ----------------------------------------------------------------------
+st.markdown("<div class='section-header'>💸 Análise por Faixa de Dívida</div>", unsafe_allow_html=True)
+
+if 'Faixa_Divida' in df_filtrado.columns and 'Divida' in df_filtrado.columns:
+    df_divida = df_filtrado.copy()
+    
+    # Criar flags (o cliente tem valor vencido/a vencer, independentemente do valor da divida total)
+    df_divida['Cliente_Vencido'] = df_divida['Vencido'] > 0
+    df_divida['Cliente_Avencer'] = df_divida['A_Vencer'] > 0
+    
+    # 1. Calcular o agrupamento
+    resumo_divida = (df_divida[df_divida['Faixa_Divida'] != "Nenhuma Dívida (R$ 0,00)"]
+                    .groupby('Faixa_Divida')
+                    .agg({
+                        'Vencido': 'sum',
+                        'A_Vencer': 'sum',
+                        'CNPJ_CPF': 'nunique', # Clientes únicos na faixa de Dívida
+                        'Cliente_Vencido': 'sum', # Clientes vencidos
+                        'Cliente_Avencer': 'sum' # Clientes a vencer
+                    })
+                    .rename(columns={
+                        'CNPJ_CPF': 'Clientes_Totais',
+                        'Cliente_Vencido': 'Clientes_Vencido_Contagem',
+                        'Cliente_Avencer': 'Clientes_Avencer_Contagem'
+                    })
+                    .reindex(ORDEM_FAIXA_DIVIDA[:-1]) # Reindexa, excluindo "Nenhuma Dívida" (R$ 0,00)
+                    .fillna(0)
+                    .reset_index())
+
+    # 2. Calcular a Inadimplência total da carteira filtrada (para participação)
+    inadimplencia_total_carteira = df_filtrado['Vencido'].sum()
+    
+    # 3. Calcular métricas
+    resumo_divida['Total_Carteira_Faixa'] = resumo_divida['Vencido'] + resumo_divida['A_Vencer']
+    
+    # Inadimplência na Faixa (Vencido / Total Carteira na Faixa)
+    resumo_divida['Inadimplencia_Faixa_Pct'] = (
+        (resumo_divida['Vencido'] / resumo_divida['Total_Carteira_Faixa']) * 100
+    ).fillna(0).round(2)
+    
+    # Participação na Inadimplência Geral (Vencido na Faixa / Vencido Total da Carteira Filtrada)
+    resumo_divida['Participacao_Inad_Geral_Pct'] = (
+        (resumo_divida['Vencido'] / inadimplencia_total_carteira) * 100
+    ).fillna(0).round(2) if inadimplencia_total_carteira > 0 else 0
+    
+    # --- Tabela de Exibição ---
+    st.markdown("### 📋 Resumo Numérico por Faixa de Dívida")
+    
+    df_exibicao_divida = resumo_divida.copy()
+    df_exibicao_divida.rename(columns={
+        'Faixa_Divida': 'Faixa de Dívida',
+        'Vencido': 'Total Vencido (R$)',
+        'A_Vencer': 'Total a Vencer (R$)',
+        'Clientes_Totais': 'Total na Faixa (Clientes)',
+        'Clientes_Vencido_Contagem': 'Clientes Vencidos',
+        'Clientes_Avencer_Contagem': 'Clientes a Vencer',
+        'Inadimplencia_Faixa_Pct': 'Inadimplência na Faixa (%)',
+        'Participacao_Inad_Geral_Pct': 'Part. na Inadimplência Geral (%)',
+    }, inplace=True)
+
+    df_exibicao_divida = df_exibicao_divida[[
+        'Faixa de Dívida', 
+        'Total Vencido (R$)', 
+        'Total a Vencer (R$)', 
+        'Clientes Vencidos', 
+        'Clientes a Vencer', 
+        'Part. na Inadimplência Geral (%)'
+    ]]
+
+    st.dataframe(
+        df_exibicao_divida.style.format({
+            "Total Vencido (R$)": "R$ {:,.2f}",
+            "Total a Vencer (R$)": "R$ {:,.2f}",
+            "Total na Faixa (Clientes)": "{:,.0f}",
+            "Clientes Vencidos": "{:,.0f}",
+            "Clientes a Vencer": "{:,.0f}",
+            "Inadimplência na Faixa (%)": "{:,.2f}%",
+            "Part. na Inadimplência Geral (%)": "{:,.2f}%",
+        }).hide(axis='index'),
+        use_container_width=True
+    )
+    
+    # --- Gráfico de Valores por Faixa de Dívida ---
+    st.markdown("### 📈 Valores Vencido e A Vencer por Faixa de Dívida")
+
+    # Cria o DataFrame longo para o Plotly Express (Valores)
+    df_divida_long = pd.melt(
+        resumo_divida, 
+        id_vars='Faixa_Divida', 
+        value_vars=['Vencido', 'A_Vencer'], 
+        var_name='Tipo', 
+        value_name='Valor'
+    )
+    
+    # Paleta Sky Group
+    paleta_divida = {
+        "Vencido": "#E85413",     # Laranja SKY
+        "A_Vencer": "#4CAF50"    # Verde
+    }
+
+    fig_divida = px.bar(
+        df_divida_long,
+        x='Faixa_Divida',
+        y='Valor',
+        color='Tipo',
+        barmode='group',
+        color_discrete_map=paleta_divida,
+        height=550,
+        title="Comparação de Valores por Faixa de Dívida (Clientes com Dívida > R$ 0,00)"
+    )
+
+    fig_divida.update_layout(
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(size=14, color='black'),
+        xaxis_title="Faixa de Dívida",
+        yaxis_title="Valor (R$)",
+        legend_title="Tipo de Valor",
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=True, gridcolor="#e0e0e0")
+    )
+
+    # Formatar Y em R$
+    fig_divida.update_yaxes(tickprefix="R$ ", tickformat=",.2f")
+
+    # Labels de valor acima de cada barra 
+    for i, trace in enumerate(fig_divida.data):
+        tipo = trace.name
+        valores_trace = df_divida_long[df_divida_long['Tipo'] == tipo]['Valor']
+
+        fig_divida.update_traces(
+            text=[f"R$ {v:,.2f}" for v in valores_trace],
+            textposition="outside",
+            textfont=dict(size=12, color="black"),
+            selector=dict(name=tipo) 
+        )
+
+    st.plotly_chart(fig_divida, use_container_width=True)
+
+# ----------------------------------------------------------------------
+# --- FIM NOVO: Análise por Faixa de Dívida ---
+# ----------------------------------------------------------------------
 
 # --- Métricas de Status da Receita ---
 st.markdown("<div class='section-header'>📊 Status da Receita</div>", unsafe_allow_html=True)
