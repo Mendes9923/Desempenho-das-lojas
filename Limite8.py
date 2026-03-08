@@ -463,16 +463,19 @@ if 'Faixa_Tempo' in df_filtrado.columns:
     # Usamos uma cópia para criar as flags de clientes (Vencido e A Vencer)
     df_tm = df_filtrado.copy()
 
+    # Cálculo do Total Vencido Geral da carteira filtrada para a participação
+    total_vencido_geral = df_tm['Vencido'].sum()
+
     # Criar flags para clientes com valores vencidos e a vencer
     df_tm['Cliente_Vencido'] = df_tm['Vencido'] > 0
     df_tm['Cliente_Avencer'] = df_tm['A_Vencer'] > 0
 
-    # Agrupar e somar (COM O CORRETO 'nunique' PARA CLIENTES TOTAIS)
+    # Agrupar e somar
     resumo_tm = (df_tm.groupby('Faixa_Tempo')
                  .agg({
                      'Vencido': 'sum',
                      'A_Vencer': 'sum',
-                     'CNPJ_CPF': 'nunique', # CORRIGIDO: Conta clientes (CNPJ/CPF) únicos na faixa
+                     'CNPJ_CPF': 'nunique', 
                      'Cliente_Vencido': 'sum',
                      'Cliente_Avencer': 'sum'
                  })
@@ -488,9 +491,11 @@ if 'Faixa_Tempo' in df_filtrado.columns:
     # Calcular percentuais DENTRO DE CADA FAIXA
     resumo_tm['Total_Faixa'] = resumo_tm['Vencido'] + resumo_tm['A_Vencer']
     resumo_tm['% Vencido'] = (resumo_tm['Vencido'] / resumo_tm['Total_Faixa'] * 100).round(2).fillna(0)
-    resumo_tm['% A_Vencer'] = (resumo_tm['A_Vencer'] / resumo_tm['Total_Faixa'] * 100).round(2).fillna(0)
     
-    # --- OTIMIZAÇÃO: Exibição em DataFrame (substitui o loop de st.markdown) ---
+    # NOVO CÁLCULO: Participação na Inadimplência Geral (Quanto esta faixa representa do total vencido)
+    resumo_tm['Part_Inad_Geral'] = (resumo_tm['Vencido'] / total_vencido_geral * 100).fillna(0) if total_vencido_geral > 0 else 0
+    
+    # --- Exibição em DataFrame ---
     st.markdown("### 📋 Resumo Numérico por Faixa de Tempo")
     
     df_exibicao_tm = resumo_tm.copy()
@@ -500,11 +505,13 @@ if 'Faixa_Tempo' in df_filtrado.columns:
         'Clientes_Totais': 'Total na Faixa (Clientes)',
         'Clientes_Vencido': 'Clientes Vencidos',
         'Clientes_Avencer': 'Clientes a Vencer',
-        '% Vencido': '% Vencido (Valor)'
+        '% Vencido': '% Vencido (Valor)',
+        'Part_Inad_Geral': 'Part. na Inadimplência Geral (%)'
     }, inplace=True)
 
-    df_exibicao_tm = df_exibicao_tm[['Faixa_Tempo', 'Vencido (R$)', 'A Vencer (R$)', '% Vencido (Valor)', 
-                                    'Total na Faixa (Clientes)', 'Clientes Vencidos', 'Clientes a Vencer']]
+    # Reorganização para manter o % Vencido (Valor) e a nova Participação
+    df_exibicao_tm = df_exibicao_tm[['Faixa_Tempo', 'Vencido (R$)', 'Part. na Inadimplência Geral (%)', '% Vencido (Valor)', 
+                                    'A Vencer (R$)', 'Total na Faixa (Clientes)', 'Clientes Vencidos']]
 
     st.dataframe(
         df_exibicao_tm.style.format({
@@ -512,8 +519,8 @@ if 'Faixa_Tempo' in df_filtrado.columns:
             "A Vencer (R$)": "R$ {:,.2f}",
             "Total na Faixa (Clientes)": "{:,.0f}",
             "Clientes Vencidos": "{:,.0f}",
-            "Clientes a Vencer": "{:,.0f}",
             "% Vencido (Valor)": "{:,.2f}%",
+            "Part. na Inadimplência Geral (%)": "{:,.2f}%",
         }).hide(axis='index'),
         use_container_width=True
     )
@@ -573,7 +580,7 @@ st.markdown("<div class='section-header'>💸 Análise por Faixa de Dívida</div
 if 'Faixa_Divida' in df_filtrado.columns and 'Divida' in df_filtrado.columns:
     df_divida = df_filtrado.copy()
     
-    # Criar flags (o cliente tem valor vencido/a vencer, independentemente do valor da divida total)
+    # Criar flags
     df_divida['Cliente_Vencido'] = df_divida['Vencido'] > 0
     df_divida['Cliente_Avencer'] = df_divida['A_Vencer'] > 0
     
@@ -583,31 +590,31 @@ if 'Faixa_Divida' in df_filtrado.columns and 'Divida' in df_filtrado.columns:
                     .agg({
                         'Vencido': 'sum',
                         'A_Vencer': 'sum',
-                        'CNPJ_CPF': 'nunique', # Clientes únicos na faixa de Dívida
-                        'Cliente_Vencido': 'sum', # Clientes vencidos
-                        'Cliente_Avencer': 'sum' # Clientes a vencer
+                        'CNPJ_CPF': 'nunique', 
+                        'Cliente_Vencido': 'sum',
+                        'Cliente_Avencer': 'sum'
                     })
                     .rename(columns={
                         'CNPJ_CPF': 'Clientes_Totais',
                         'Cliente_Vencido': 'Clientes_Vencido_Contagem',
                         'Cliente_Avencer': 'Clientes_Avencer_Contagem'
                     })
-                    .reindex(ORDEM_FAIXA_DIVIDA[:-1]) # Reindexa, excluindo "Nenhuma Dívida" (R$ 0,00)
+                    .reindex(ORDEM_FAIXA_DIVIDA[:-1]) 
                     .fillna(0)
                     .reset_index())
 
-    # 2. Calcular a Inadimplência total da carteira filtrada (para participação)
+    # 2. Calcular a Inadimplência total da carteira filtrada (para participação geral)
     inadimplencia_total_carteira = df_filtrado['Vencido'].sum()
     
     # 3. Calcular métricas
     resumo_divida['Total_Carteira_Faixa'] = resumo_divida['Vencido'] + resumo_divida['A_Vencer']
     
-    # Inadimplência na Faixa (Vencido / Total Carteira na Faixa)
+    # % Vencido (Valor) -> Inadimplência na Faixa (Vencido / Total da Faixa)
     resumo_divida['Inadimplencia_Faixa_Pct'] = (
         (resumo_divida['Vencido'] / resumo_divida['Total_Carteira_Faixa']) * 100
     ).fillna(0).round(2)
     
-    # Participação na Inadimplência Geral (Vencido na Faixa / Vencido Total da Carteira Filtrada)
+    # Participação na Inadimplência Geral (Vencido na Faixa / Vencido Total Geral)
     resumo_divida['Participacao_Inad_Geral_Pct'] = (
         (resumo_divida['Vencido'] / inadimplencia_total_carteira) * 100
     ).fillna(0).round(2) if inadimplencia_total_carteira > 0 else 0
@@ -620,30 +627,30 @@ if 'Faixa_Divida' in df_filtrado.columns and 'Divida' in df_filtrado.columns:
         'Faixa_Divida': 'Faixa de Dívida',
         'Vencido': 'Total Vencido (R$)',
         'A_Vencer': 'Total a Vencer (R$)',
-        'Clientes_Totais': 'Total na Faixa (Clientes)',
         'Clientes_Vencido_Contagem': 'Clientes Vencidos',
         'Clientes_Avencer_Contagem': 'Clientes a Vencer',
-        'Inadimplencia_Faixa_Pct': 'Inadimplência na Faixa (%)',
+        'Inadimplencia_Faixa_Pct': '% Vencido (Valor)',
         'Participacao_Inad_Geral_Pct': 'Part. na Inadimplência Geral (%)',
     }, inplace=True)
 
+    # Organização das colunas conforme solicitado
     df_exibicao_divida = df_exibicao_divida[[
         'Faixa de Dívida', 
         'Total Vencido (R$)', 
+        'Part. na Inadimplência Geral (%)',
+        '% Vencido (Valor)',
         'Total a Vencer (R$)', 
         'Clientes Vencidos', 
-        'Clientes a Vencer', 
-        'Part. na Inadimplência Geral (%)'
+        'Clientes a Vencer'
     ]]
 
     st.dataframe(
         df_exibicao_divida.style.format({
             "Total Vencido (R$)": "R$ {:,.2f}",
             "Total a Vencer (R$)": "R$ {:,.2f}",
-            "Total na Faixa (Clientes)": "{:,.0f}",
             "Clientes Vencidos": "{:,.0f}",
             "Clientes a Vencer": "{:,.0f}",
-            "Inadimplência na Faixa (%)": "{:,.2f}%",
+            "% Vencido (Valor)": "{:,.2f}%",
             "Part. na Inadimplência Geral (%)": "{:,.2f}%",
         }).hide(axis='index'),
         use_container_width=True
