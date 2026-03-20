@@ -6,298 +6,113 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="Dashboard Sky Group", layout="wide")
 
-# Função para formatar valores monetários (mantida aqui para ser global)
+# Função para formatar valores monetários
 def formatar_moeda(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# --- CSS personalizado ---
+# --- CSS personalizado (Mantido do Original) ---
 st.markdown("""
     <style>
-    /* ======== PALETA SKY GROUP ======== */
     :root {
-        --sky-orange: #ef5b25;
-        --sky-orange-light: #ff9800;
-        --sky-yellow: #ffc107;
-        --sky-green: #4caf50;
-        --text-dark: #333333;
-        --text-medium: #666666;
-        --bg-light: #f2f2f2;
-        --white: #ffffff;
+        --sky-orange: #ef5b25; --sky-orange-light: #ff9800; --sky-yellow: #ffc107;
+        --sky-green: #4caf50; --text-dark: #333333; --text-medium: #666666;
+        --bg-light: #f2f2f2; --white: #ffffff;
     }
-
-    .main, .block-container {
-        background-color: var(--bg-light);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: var(--text-dark);
-    }
-
-    .header-title {
-        color: var(--sky-orange);
-        text-align: center;
-        margin-bottom: 30px;
-        font-size: 2.5em;
-        font-weight: 700;
-    }
-
-    .section-header {
-        color: var(--text-dark);
-        margin-top: 30px;
-        margin-bottom: 20px;
-        font-size: 1.5em;
-        font-weight: 600;
-        border-left: 5px solid var(--sky-orange);
-        padding-left: 15px;
-    }
-
-    .metric-container {
-        background-color: var(--white);
-        border-radius: 15px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-        margin-bottom: 10px;
-        border: 1px solid #e0e0e0;
-        transition: transform 0.2s ease;
-    }
-    .metric-container:hover {
-        transform: translateY(-2px);
-        box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.15);
-    }
-
-    .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: var(--text-dark);
-        margin-bottom: 5px;
-    }
-
-    .metric-label {
-        font-size: 14px;
-        color: var(--text-medium);
-        font-weight: 500;
-    }
-
-    .footer {
-        text-align: center;
-        padding: 20px;
-        background: #e0e0e0;
-        margin-top: 40px;
-        border-radius: 10px;
-        color: var(--text-medium);
-        font-weight: 500;
-    }
-
-    .legenda-status {
-        background: var(--white);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 20px 0;
-        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-        color: var(--text-dark);
-    }
-
-    /* Ícones da legenda com a paleta Sky */
-    .legenda-status .ruim { background-color: var(--sky-orange); }
-    .legenda-status .regular { background-color: var(--sky-orange-light); }
-    .legenda-status .bom { background-color: var(--sky-yellow); }
-    .legenda-status .otimo { background-color: var(--sky-green); }
+    .main, .block-container { background-color: var(--bg-light); color: var(--text-dark); }
+    .header-title { color: var(--sky-orange); text-align: center; margin-bottom: 30px; font-size: 2.5em; font-weight: 700; }
+    .section-header { color: var(--text-dark); margin-top: 30px; margin-bottom: 20px; font-size: 1.5em; font-weight: 600; border-left: 5px solid var(--sky-orange); padding-left: 15px; }
+    .metric-container { background-color: var(--white); border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 10px; border: 1px solid #e0e0e0; }
+    .metric-value { font-size: 28px; font-weight: bold; color: var(--text-dark); }
+    .footer { text-align: center; padding: 20px; background: #e0e0e0; margin-top: 40px; border-radius: 10px; color: var(--text-medium); }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Funções Auxiliares (Faixas de Dívida) ---
+# --- Funções Auxiliares (Mantidas) ---
 def classificar_divida(valor):
-    if pd.isna(valor) or valor == 0:
-        return "Nenhuma Dívida (R$ 0,00)"
-    elif valor <= 2000:
-        return "R$ 0,01 a R$ 2.000,00"
-    elif valor <= 5000:
-        return "R$ 2.000,01 a R$ 5.000,00"
-    elif valor <= 10000:
-        return "R$ 5.000,01 a R$ 10.000,00"
-    elif valor <= 50000:
-        return "R$ 10.000,01 a R$ 50.000,00"
-    elif valor <= 100000:
-        return "R$ 50.000,01 a R$ 100.000,00"
-    else:
-        return "Acima de R$ 100.000,00"
+    if pd.isna(valor) or valor == 0: return "Nenhuma Dívida (R$ 0,00)"
+    elif valor <= 2000: return "R$ 0,01 a R$ 2.000,00"
+    elif valor <= 5000: return "R$ 2.000,01 a R$ 5.000,00"
+    elif valor <= 10000: return "R$ 5.000,01 a R$ 10.000,00"
+    elif valor <= 50000: return "R$ 10.000,01 a R$ 50.000,00"
+    elif valor <= 100000: return "R$ 50.000,01 a R$ 100.000,00"
+    else: return "Acima de R$ 100.000,00"
 
-ORDEM_FAIXA_DIVIDA = [
-    "R$ 0,01 a R$ 2.000,00",
-    "R$ 2.000,01 a R$ 5.000,00",
-    "R$ 5.000,01 a R$ 10.000,00",
-    "R$ 10.000,01 a R$ 50.000,00",
-    "R$ 50.000,01 a R$ 100.000,00",
-    "Acima de R$ 100.000,00",
-    "Nenhuma Dívida (R$ 0,00)"
-]
-# --- Fim Funções Auxiliares ---
+ORDEM_FAIXA_DIVIDA = ["R$ 0,01 a R$ 2.000,00", "R$ 2.000,01 a R$ 5.000,00", "R$ 5.000,01 a R$ 10.000,00", "R$ 10.000,01 a R$ 50.000,00", "R$ 50.000,01 a R$ 100.000,00", "Acima de R$ 100.000,00", "Nenhuma Dívida (R$ 0,00)"]
 
-
-# --- Carregamento de dados com cache ---
 @st.cache_data
 def carregar_dados():
     try:
         df = pd.read_excel("Limite geral.xlsx", sheet_name="Limite geral")
+        df.columns = (df.columns.str.strip().str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8'))
         
-        # Limpeza e normalização dos nomes das colunas
-        df.columns = (df.columns.str.strip()
-                     .str.normalize('NFKD')
-                     .str.encode('ascii', errors='ignore')
-                     .str.decode('utf-8'))
+        # Mapeamento e Normalização (Incluindo Supervisor)
+        df.rename(columns={'Fi': 'Filial', 'CNPJ/CPF': 'CNPJ_CPF', 'Vendedor': 'Vendedor', 'A vencer': 'A_Vencer', 'T.M': 'TM'}, inplace=True)
         
-        # Renomear colunas para nomes consistentes
-        df.rename(columns={
-            'Fi': 'Filial',
-            'CNPJ/CPF': 'CNPJ_CPF',
-            'Limite': 'Limite',
-            'Risk Scor': 'Risk_Score',
-            'Status': 'Status',
-            'Media,Ser': 'Media_Ser',
-            'Media,Pa': 'Media_Pa',
-            'Lim,Sug,': 'Lim_Sug',
-            'Lim,Real': 'Lim_Real',
-            'Vencido': 'Vencido',
-            'A vencer': 'A_Vencer',
-            'Divida': 'Divida',
-            'Disponivel': 'Disponivel',
-            'Vendedor': 'Vendedor',
-            'Receita': 'Receita',
-            'Fundacao': 'Fundacao',
-            'T.M': 'TM'
-        }, inplace=True)
+        # Tratamento Robusto de Supervisor
+        if 'Supervisor' in df.columns:
+            df['Supervisor'] = df['Supervisor'].astype(str).str.strip().replace('nan', 'Sem Supervisor')
+        else:
+            df['Supervisor'] = 'Sem Supervisor'
+
+        # Colunas numéricas
+        colunas_num = ['Vencido', 'A_Vencer', 'Disponivel', 'Limite', 'Risk_Score', 'Divida']
+        for col in colunas_num:
+            if col not in df.columns: df[col] = 0.0
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
-        # Limpeza e tratamento de dados
-        df['Filial'] = df['Filial'].astype(str).str.strip()
-        
-        # Tratar coluna Vendedor - converter para string
-        df['Vendedor'] = df['Vendedor'].astype(str).str.strip()
-        
-        # Preencher valores nulos nas colunas numéricas
-        colunas_numericas = ['Vencido', 'A_Vencer', 'Disponivel', 'Limite', 'Risk_Score', 'Divida'] # Adicionado 'Divida'
-        for coluna in colunas_numericas:
-            if coluna in df.columns:
-                df[coluna] = pd.to_numeric(df[coluna], errors='coerce').fillna(0)
-        
-        # --- OTIMIZAÇÃO: TRATAMENTO E CLASSIFICAÇÃO DA COLUNA TM (Tempo de Mercado) ---
+        # Faixas de Tempo e Dívida
         if 'TM' in df.columns:
-            # Extrair apenas números e converter para float
             df['TM_clean'] = df['TM'].astype(str).str.extract(r'(\d+(?:,\d+)?)')[0].str.replace(',', '.').astype(float)
-
-            # Criar faixas de tempo de mercado
-            def classificar_tempo_mercado(valor):
-                if pd.isna(valor):
-                    return "Não informado"
-                elif valor <= 2:
-                    return "0–2 anos"
-                elif valor <= 5:
-                    return "3–5 anos"
-                elif valor <= 10:
-                    return "6–10 anos"
-                elif valor <= 20:
-                    return "11–20 anos"
-                else:
-                    return "Acima de 20 anos"
-
-            df['Faixa_Tempo'] = df['TM_clean'].apply(classificar_tempo_mercado)
-            df.drop(columns=['TM_clean'], inplace=True, errors='ignore') # Remove coluna temporária
-
-        # --- NOVO: Classificação por Faixa de Dívida ---
-        if 'Divida' in df.columns:
-            df['Faixa_Divida'] = df['Divida'].apply(classificar_divida)
-
-        return df
+            df['Faixa_Tempo'] = df['TM_clean'].apply(lambda x: "0–2 anos" if x <= 2 else "3–5 anos" if x <= 5 else "6–10 anos" if x <= 10 else "11–20 anos" if x <= 20 else "Acima de 20 anos" if pd.notna(x) else "Não informado")
         
-    except FileNotFoundError:
-        st.error("❌ Arquivo 'Limite geral.xlsx' não encontrado. Por favor, verifique se o arquivo está na pasta correta.")
-        st.stop()
+        df['Faixa_Divida'] = df['Divida'].apply(classificar_divida)
+        return df
     except Exception as e:
-        st.error(f"❌ Erro ao carregar o arquivo: {e}")
-        st.stop()
+        st.error(f"Erro: {e}"); st.stop()
 
-# --- Título e Logo ---
-col_logo, col_titulo = st.columns([1, 4])
-with col_titulo:
-    st.markdown("<div class='header-title'>📊 Dashboard Financeiro - Sky Group</div>", unsafe_allow_html=True)
+# --- Interface ---
+df = carregar_dados()
+st.markdown("<div class='header-title'>📊 Dashboard Financeiro - Sky Group</div>", unsafe_allow_html=True)
 
-# --- Botão para recarregar dados ---
 if st.button("🔄 Atualizar Dados"):
     st.cache_data.clear()
     st.rerun()
 
-# --- Carregar dados ---
-df = carregar_dados()
-
-# --- Filtros ---
 st.markdown("<div class='section-header'>🔍 Filtros</div>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
 
-col1, col2 = st.columns(2)
 with col1:
-    filiais = sorted(df['Filial'].unique().tolist())
-    filiais_select = st.multiselect(
-        "**Filial**", 
-        options=filiais, 
-        default=filiais,
-        help="Selecione uma ou mais filiais"
-    )
-
+    filiais_sel = st.multiselect("**Filial**", options=sorted(df['Filial'].unique().tolist()), default=df['Filial'].unique().tolist())
 with col2:
+    # Novo Filtro de Supervisor
+    supervisores = sorted(df['Supervisor'].unique().tolist())
+    supervisor_sel = st.selectbox("**Supervisor**", options=['Todos'] + supervisores)
+with col3:
     vendedores = sorted(df['Vendedor'].unique().tolist())
-    vendedor_select = st.selectbox(
-        "**Vendedor**", 
-        options=['Todos'] + vendedores,
-        help="Selecione um vendedor específico ou 'Todos'"
-    )
+    vendedor_sel = st.selectbox("**Vendedor**", options=['Todos'] + vendedores)
 
-# --- Aplicar filtros ---
+# Aplicação dos Filtros
 df_filtrado = df.copy()
-if filiais_select:
-    df_filtrado = df_filtrado[df_filtrado['Filial'].isin(filiais_select)]
-if vendedor_select != 'Todos':
-    df_filtrado = df_filtrado[df_filtrado['Vendedor'] == vendedor_select]
+if filiais_sel:
+    df_filtrado = df_filtrado[df_filtrado['Filial'].isin(filiais_sel)]
+if supervisor_sel != 'Todos':
+    df_filtrado = df_filtrado[df_filtrado['Supervisor'] == supervisor_sel]
+if vendedor_sel != 'Todos':
+    df_filtrado = df_filtrado[df_filtrado['Vendedor'] == vendedor_sel]
 
-# --- Métricas em Cards ---
+# --- Métricas Principais ---
 st.markdown("<div class='section-header'>📈 Métricas Principais</div>", unsafe_allow_html=True)
-
 vencido_total = df_filtrado['Vencido'].sum()
 avencer_total = df_filtrado['A_Vencer'].sum()
 disponivel_total = df_filtrado['Disponivel'].sum()
 total_carteira = vencido_total + avencer_total
-inad_pct = (vencido_total / total_carteira * 100) if total_carteira else 0
+inad_pct = (vencido_total / total_carteira * 100) if total_carteira > 0 else 0
 
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.markdown(f"""
-        <div class='metric-container'>
-            <div class='metric-value' style='color: #ef5b25;'>{formatar_moeda(vencido_total)}</div>
-            <div class='metric-label'>💰 Total Vencido</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown(f"""
-        <div class='metric-container'>
-            <div class='metric-value' style='color: #ff9800;'>{formatar_moeda(avencer_total)}</div>
-            <div class='metric-label'>📆 Total a Vencer</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col3:
-    st.markdown(f"""
-        <div class='metric-container'>
-            <div class='metric-value' style='color: #4caf50;'>{formatar_moeda(disponivel_total)}</div>
-            <div class='metric-label'>✅ Crédito Disponível</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col4:
-    cor_inad = "#ef5b25" if inad_pct > 10 else "#ff9800" if inad_pct > 5 else "#4caf50"
-    st.markdown(f"""
-        <div class='metric-container'>
-            <div class='metric-value' style='color: {cor_inad};'>{inad_pct:.1f}%</div>
-            <div class='metric-label'>⚠️ Inadimplência</div>
-        </div>
-    """, unsafe_allow_html=True)
+m1, m2, m3, m4 = st.columns(4)
+m1.markdown(f"<div class='metric-container'><div class='metric-value' style='color: #ef5b25;'>{formatar_moeda(vencido_total)}</div><div class='metric-label'>💰 Total Vencido</div></div>", unsafe_allow_html=True)
+m2.markdown(f"<div class='metric-container'><div class='metric-value' style='color: #ff9800;'>{formatar_moeda(avencer_total)}</div><div class='metric-label'>📆 Total a Vencer</div></div>", unsafe_allow_html=True)
+m3.markdown(f"<div class='metric-container'><div class='metric-value' style='color: #4caf50;'>{formatar_moeda(disponivel_total)}</div><div class='metric-label'>✅ Crédito Disponível</div></div>", unsafe_allow_html=True)
+m4.markdown(f"<div class='metric-container'><div class='metric-value'>{inad_pct:.1f}%</div><div class='metric-label'>⚠️ Inadimplência</div></div>", unsafe_allow_html=True)
 
 # --- Legenda dos Status ---
 st.markdown("<div class='section-header'>📋 Legenda de Classificação</div>", unsafe_allow_html=True)
@@ -863,37 +678,26 @@ with col_rank2:
     )
 
 # --- Exportação para Excel ---
+# --- EXPORTAÇÃO (DEFINITIVA) ---
 st.markdown("<div class='section-header'>📥 Exportação de Dados</div>", unsafe_allow_html=True)
-
-st.markdown("""
-<div style='background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);'>
-    <p>Exporte os dados filtrados para análise em Excel:</p>
-</div>
-""", unsafe_allow_html=True)
-
 output = BytesIO()
 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
     df_filtrado.to_excel(writer, index=False, sheet_name='Dados_Filtrados')
     
-    # Adicionar aba com resumo
+    # Adicionar aba com resumo - variáveis agora estão garantidas no escopo global
     resumo = pd.DataFrame({
         'Métrica': ['Total Vencido', 'Total a Vencer', 'Crédito Disponível', 'Inadimplência (%)'],
         'Valor': [vencido_total, avencer_total, disponivel_total, inad_pct]
     })
     resumo.to_excel(writer, index=False, sheet_name='Resumo')
 
-data = output.getvalue()
-
-col_export1, col_export2, col_export3 = st.columns([1, 2, 1])
-with col_export2:
-    st.download_button(
-        label="📤 Baixar Dados Filtrados em Excel",
-        data=data,
-        file_name=f"dashboard_financeiro_skygroup_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
-
+st.download_button(
+    label="📤 Baixar Relatório Completo em Excel",
+    data=output.getvalue(),
+    file_name=f"relatorio_sky_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    use_container_width=True
+)
 # --- Rodapé ---
 st.markdown("""
 <div class='footer'>
