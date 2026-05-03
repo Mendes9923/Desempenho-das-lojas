@@ -13,17 +13,243 @@ def formatar_moeda(valor):
 # --- CSS personalizado (Mantido do Original) ---
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
     :root {
-        --sky-orange: #ef5b25; --sky-orange-light: #ff9800; --sky-yellow: #ffc107;
-        --sky-green: #4caf50; --text-dark: #333333; --text-medium: #666666;
-        --bg-light: #f2f2f2; --white: #ffffff;
+        --sky-orange: #ef5b25;
+        --sky-orange-light: #ff8c42;
+        --sky-yellow: #ffc107;
+        --sky-green: #2ecc71;
+        --sky-red: #e74c3c;
+        --text-dark: #0f1117;
+        --text-medium: #5a6478;
+        --text-light: #94a3b8;
+        --bg-main: #f0f2f8;
+        --bg-card: #ffffff;
+        --bg-sidebar: #1a1f2e;
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+        --shadow-lg: 0 10px 40px rgba(0,0,0,0.10);
     }
-    .main, .block-container { background-color: var(--bg-light); color: var(--text-dark); }
-    .header-title { color: var(--sky-orange); text-align: center; margin-bottom: 30px; font-size: 2.5em; font-weight: 700; }
-    .section-header { color: var(--text-dark); margin-top: 30px; margin-bottom: 20px; font-size: 1.5em; font-weight: 600; border-left: 5px solid var(--sky-orange); padding-left: 15px; }
-    .metric-container { background-color: var(--white); border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 10px; border: 1px solid #e0e0e0; }
-    .metric-value { font-size: 28px; font-weight: bold; color: var(--text-dark); }
-    .footer { text-align: center; padding: 20px; background: #e0e0e0; margin-top: 40px; border-radius: 10px; color: var(--text-medium); }
+
+    html, body, [class*="css"] {
+        font-family: 'DM Sans', sans-serif !important;
+    }
+
+    /* Fundo geral */
+    .stApp { background-color: var(--bg-main) !important; }
+    .main .block-container {
+        background-color: var(--bg-main);
+        padding: 2rem 2.5rem 3rem !important;
+        max-width: 1400px !important;
+    }
+
+    /* Header */
+    .dash-header {
+        background: linear-gradient(135deg, #1a1f2e 0%, #2d3552 60%, #3a2a1e 100%);
+        border-radius: 20px;
+        padding: 32px 40px;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: var(--shadow-lg);
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .dash-header-icon {
+        font-size: 3em;
+        background: linear-gradient(135deg, #ef5b25, #ff8c42);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .dash-header-text h1 {
+        font-family: 'Syne', sans-serif !important;
+        color: #ffffff !important;
+        font-size: 2.2em !important;
+        font-weight: 800 !important;
+        margin: 0 !important;
+        letter-spacing: -0.5px;
+    }
+    .dash-header-text p {
+        color: rgba(255,255,255,0.5) !important;
+        margin: 4px 0 0 0 !important;
+        font-size: 0.95em !important;
+        font-weight: 300 !important;
+    }
+    .dash-badge {
+        margin-left: auto;
+        background: rgba(239,91,37,0.15);
+        border: 1px solid rgba(239,91,37,0.3);
+        color: #ef5b25;
+        border-radius: 100px;
+        padding: 6px 16px;
+        font-size: 0.8em;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    /* Seção de filtros */
+    .filter-section {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 28px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+    .filter-title {
+        font-family: 'Syne', sans-serif !important;
+        font-size: 0.78em !important;
+        font-weight: 700 !important;
+        letter-spacing: 1.5px !important;
+        text-transform: uppercase !important;
+        color: var(--sky-orange) !important;
+        margin-bottom: 14px !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Section headers */
+    .section-header {
+        font-family: 'Syne', sans-serif !important;
+        color: var(--text-dark) !important;
+        margin-top: 36px !important;
+        margin-bottom: 18px !important;
+        font-size: 1.3em !important;
+        font-weight: 700 !important;
+        border-left: 4px solid var(--sky-orange) !important;
+        padding-left: 14px !important;
+        letter-spacing: -0.2px;
+    }
+
+    /* Metric cards */
+    .metric-container {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 22px 20px;
+        text-align: center;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .metric-container::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--sky-orange), var(--sky-orange-light));
+    }
+    .metric-container:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    .metric-value {
+        font-family: 'Syne', sans-serif !important;
+        font-size: 1.15em !important;
+        font-weight: 800 !important;
+        color: var(--text-dark) !important;
+        line-height: 1.2;
+        margin-bottom: 4px;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal !important;
+    }
+    .metric-label {
+        font-size: 0.8em !important;
+        color: var(--text-medium) !important;
+        font-weight: 500 !important;
+        margin-top: 6px;
+    }
+
+    /* Legenda */
+    .legenda-status {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 20px 24px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 8px;
+    }
+    .legenda-status h4 {
+        font-family: 'Syne', sans-serif !important;
+        color: var(--text-dark) !important;
+        margin-bottom: 12px !important;
+        font-size: 0.95em !important;
+        font-weight: 700 !important;
+    }
+
+    /* Status cards receita */
+    .status-card {
+        background: var(--bg-card);
+        border-radius: 14px;
+        padding: 18px 16px;
+        box-shadow: var(--shadow-md);
+        text-align: center;
+        border: 1px solid var(--border);
+        transition: transform 0.2s ease;
+    }
+    .status-card:hover { transform: translateY(-2px); }
+    .status-card p { color: var(--text-medium); margin: 0; font-size: 0.78em; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; }
+    .status-card h2 { font-family: 'Syne', sans-serif !important; color: var(--text-dark); margin: 6px 0 0 0; font-size: 2.2em; font-weight: 800; }
+
+    /* Streamlit elements override */
+    .stMultiSelect > div > div { border-radius: 10px !important; border-color: var(--border) !important; }
+    .stSelectbox > div > div { border-radius: 10px !important; border-color: var(--border) !important; }
+    div[data-testid="stMetric"] {
+        background: var(--bg-card);
+        border-radius: 14px;
+        padding: 16px 20px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+    div[data-testid="stMetric"] label { color: var(--text-medium) !important; font-size: 0.82em !important; font-weight: 600 !important; }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-family: 'Syne', sans-serif !important; font-weight: 800 !important; }
+
+    /* Dataframe */
+    .stDataFrame { border-radius: 12px !important; overflow: hidden; }
+
+    /* Botões */
+    .stButton > button {
+        background: linear-gradient(135deg, var(--sky-orange), var(--sky-orange-light)) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        padding: 10px 20px !important;
+        transition: opacity 0.2s;
+    }
+    .stButton > button:hover { opacity: 0.88 !important; }
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #1a1f2e, #2d3552) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Divider */
+    hr { border-color: var(--border) !important; margin: 28px 0 !important; }
+
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 24px;
+        background: linear-gradient(135deg, #1a1f2e, #2d3552);
+        margin-top: 48px;
+        border-radius: 16px;
+        color: rgba(255,255,255,0.5);
+        font-size: 0.85em;
+        letter-spacing: 0.3px;
+    }
+    .footer strong { color: var(--sky-orange); }
+
+    /* Subheader */
+    h2, h3 { font-family: 'Syne', sans-serif !important; font-weight: 700 !important; color: var(--text-dark) !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -72,24 +298,38 @@ def carregar_dados():
 
 # --- Interface ---
 df = carregar_dados()
-st.markdown("<div class='header-title'>📊 Dashboard Financeiro - Sky Group</div>", unsafe_allow_html=True)
+st.markdown("""
+<div class='dash-header'>
+    <div class='dash-header-icon'>📊</div>
+    <div class='dash-header-text'>
+        <h1>Dashboard Financeiro</h1>
+        <p>Sky Group Brasil · Análise de Crédito e Risco</p>
+    </div>
+    <div class='dash-badge'>⚡ LIVE</div>
+</div>
+""", unsafe_allow_html=True)
 
+# Botão atualizar compacto
 if st.button("🔄 Atualizar Dados"):
     st.cache_data.clear()
     st.rerun()
 
-st.markdown("<div class='section-header'>🔍 Filtros</div>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
+st.markdown("""
+<div class='filter-section'>
+    <div class='filter-title'>🔍 &nbsp; Filtros de Análise</div>
+</div>
+""", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([2, 1.5, 1.5])
 
 with col1:
-    filiais_sel = st.multiselect("**Filial**", options=sorted(df['Filial'].unique().tolist()), default=df['Filial'].unique().tolist())
+    filiais_sel = st.multiselect("📍 Filial", options=sorted(df['Filial'].unique().tolist()), default=df['Filial'].unique().tolist())
 with col2:
-    # Novo Filtro de Supervisor
     supervisores = sorted(df['Supervisor'].unique().tolist())
-    supervisor_sel = st.selectbox("**Supervisor**", options=['Todos'] + supervisores)
+    supervisor_sel = st.selectbox("👤 Supervisor", options=['Todos'] + supervisores)
 with col3:
     vendedores = sorted(df['Vendedor'].unique().tolist())
-    vendedor_sel = st.selectbox("**Vendedor**", options=['Todos'] + vendedores)
+    vendedor_sel = st.selectbox("🧑‍💼 Vendedor", options=['Todos'] + vendedores)
 
 # Aplicação dos Filtros
 df_filtrado = df.copy()
@@ -107,6 +347,20 @@ avencer_total = df_filtrado['A_Vencer'].sum()
 disponivel_total = df_filtrado['Disponivel'].sum()
 total_carteira = vencido_total + avencer_total
 inad_pct = (vencido_total / total_carteira * 100) if total_carteira > 0 else 0
+
+credito_aprovado = df_filtrado['Aprovado'].sum()
+credito_negado = df_filtrado['Nao aprovado'].sum()
+credito_solicitado = credito_aprovado + credito_negado
+taxa_aprovacao = (credito_aprovado / credito_solicitado * 100) if credito_solicitado > 0 else 0
+
+# AJUSTE SOLICITADO: Médias de Score separadas
+# Média de score apenas de quem teve valor aprovado > 0
+score_aprovados = df_filtrado[df_filtrado['Aprovado'] > 0]['Risk_Score'].mean()
+# Média de score apenas de quem teve valor negado > 0
+score_negados = df_filtrado[df_filtrado['Nao aprovado'] > 0]['Risk_Score'].mean()
+# Média geral
+score_geral = df_filtrado['Risk_Score'].mean()
+
 
 m1, m2, m3, m4 = st.columns(4)
 m1.markdown(f"<div class='metric-container'><div class='metric-value' style='color: #ef5b25;'>{formatar_moeda(vencido_total)}</div><div class='metric-label'>💰 Total Vencido</div></div>", unsafe_allow_html=True)
@@ -269,6 +523,148 @@ with col4:
         }),
         use_container_width=True
     )
+
+    
+# --- EXIBIÇÃO DASHBOARD ---
+st.markdown("<div class='section-header'>📋 Gestão de Limites e Crédito</div>", unsafe_allow_html=True)
+
+# BLOCO 1: Aprovação de Limites
+st.subheader("✅ Análise de Aprovação")
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.markdown(f"""<div class='metric-container'>
+        <div class='metric-label' style='margin-bottom:8px;'>Crédito Solicitado</div>
+        <div class='metric-value' style='color:#0f1117;'>{formatar_moeda(credito_solicitado)}</div>
+    </div>""", unsafe_allow_html=True)
+with col2:
+    st.markdown(f"""<div class='metric-container'>
+        <div class='metric-label' style='margin-bottom:8px;'>Crédito Aprovado</div>
+        <div class='metric-value' style='color:#2ecc71;'>{formatar_moeda(credito_aprovado)}</div>
+    </div>""", unsafe_allow_html=True)
+with col3:
+    st.markdown(f"""<div class='metric-container'>
+        <div class='metric-label' style='margin-bottom:8px;'>Taxa de Aprovação</div>
+        <div class='metric-value' style='color:#ef5b25;'>{taxa_aprovacao:.2f}%</div>
+    </div>""", unsafe_allow_html=True)
+
+
+# BLOCO 2: Proteção de Crédito e Risco
+st.markdown("---")
+st.subheader("🛡️ Proteção de Crédito / Risco")
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    st.markdown(f"""<div class='metric-container'>
+        <div class='metric-label' style='margin-bottom:8px;'>Crédito Negado</div>
+        <div class='metric-value' style='color:#e74c3c;'>{formatar_moeda(credito_negado)}</div>
+    </div>""", unsafe_allow_html=True)
+with c2:
+    st.markdown(f"""<div class='metric-container'>
+        <div class='metric-label' style='margin-bottom:8px;'>Risco Estimado (Vencido)</div>
+        <div class='metric-value' style='color:#ef5b25;'>{formatar_moeda(vencido_total)}</div>
+    </div>""", unsafe_allow_html=True)
+with c3:
+    st.markdown(f"""<div class='metric-container'>
+        <div class='metric-label' style='margin-bottom:8px;'>Risco da Carteira</div>
+        <div class='metric-value' style='color:#ff9800;'>{inad_pct:.2f}%</div>
+    </div>""", unsafe_allow_html=True)
+
+st.markdown("---")
+st.subheader("📈 Comparativo por Status de Risco")
+
+df_status = df_filtrado.groupby('Status').agg({
+    'Aprovado': 'sum',
+    'Nao aprovado': 'sum'
+}).reset_index()
+
+# Contagem de clientes aprovados e não aprovados por status
+df_contagem = df_filtrado.groupby('Status').agg(
+    Qtd_Aprovados=('Aprovado', lambda x: (x > 0).sum()),
+    Qtd_Nao_Aprovados=('Nao aprovado', lambda x: (x > 0).sum())
+).reset_index()
+
+df_status = df_status.merge(df_contagem, on='Status', how='left')
+
+# Cálculo da Porcentagem de Aprovação
+df_status['% Aprovação'] = (df_status['Aprovado'] / (df_status['Aprovado'] + df_status['Nao aprovado'])) * 100
+
+# Ordenação
+ordem = {'Ótimo': 0, 'Bom': 1, 'Regular': 2, 'Ruim': 3}
+df_status['ordem'] = df_status['Status'].map(ordem)
+df_status = df_status.sort_values('ordem').drop(columns=['ordem'])
+
+# Cards de resumo por status
+st.markdown("#### 📋 Resumo por Status")
+status_list = df_status.to_dict('records')
+cols_status = st.columns(len(status_list)) if len(status_list) > 0 else st.columns(4)
+
+cores_status = {'Ótimo': '#2ecc71', 'Bom': '#ffc107', 'Regular': '#ff9800', 'Ruim': '#ef5b25'}
+for i, row in enumerate(status_list):
+    cor = cores_status.get(row.get('Status', ''), '#666')
+    with cols_status[i]:
+        st.markdown(f"""
+        <div style='background:#fff; border-radius:14px; padding:18px 14px; border:1px solid #e2e8f0;
+                    box-shadow:0 4px 12px rgba(0,0,0,0.07); border-top: 4px solid {cor}; text-align:center;'>
+            <div style='font-family:Syne,sans-serif; font-weight:800; font-size:1.1em; color:{cor}; margin-bottom:10px;'>
+                {row.get('Status','')}
+            </div>
+            <div style='display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;'>
+                <div style='background:#f8f9fa; border-radius:8px; padding:8px 4px;'>
+                    <div style='font-size:0.68em; color:#5a6478; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;'>Qtd Aprovados</div>
+                    <div style='font-family:Syne,sans-serif; font-weight:800; font-size:1.4em; color:#2ecc71;'>{int(row.get('Qtd_Aprovados',0))}</div>
+                </div>
+                <div style='background:#f8f9fa; border-radius:8px; padding:8px 4px;'>
+                    <div style='font-size:0.68em; color:#5a6478; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;'>Qtd Negados</div>
+                    <div style='font-family:Syne,sans-serif; font-weight:800; font-size:1.4em; color:#ef5b25;'>{int(row.get('Qtd_Nao_Aprovados',0))}</div>
+                </div>
+            </div>
+            <div style='font-size:0.75em; color:#5a6478; font-weight:500;'>
+                Taxa de aprovação: <strong style='color:{cor};'>{row.get('% Aprovação', 0):.1f}%</strong>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.markdown("#### 📊 Tabela Detalhada por Status")
+df_exibicao_status = df_status[['Status', 'Aprovado', 'Nao aprovado', 'Qtd_Aprovados', 'Qtd_Nao_Aprovados', '% Aprovação']].copy()
+df_exibicao_status.columns = ['Status', 'Valor Aprovado (R$)', 'Valor Negado (R$)', 'Qtd. Aprovados', 'Qtd. Negados', '% Aprovação']
+
+st.dataframe(df_exibicao_status.style.format({
+    "Valor Aprovado (R$)": "R$ {:,.2f}",
+    "Valor Negado (R$)": "R$ {:,.2f}",
+    "Qtd. Aprovados": "{:,.0f}",
+    "Qtd. Negados": "{:,.0f}",
+    "% Aprovação": "{:.2f}%"
+}).hide(axis='index'), use_container_width=True)
+
+# Gráfico duplo: Valores e Quantidades
+col_g1, col_g2 = st.columns(2)
+
+with col_g1:
+    fig_val = px.bar(df_status, x='Status', y=['Aprovado', 'Nao aprovado'],
+                 title="Valor Aprovado vs Negado por Status",
+                 barmode='group', color_discrete_sequence=['#2ecc71', '#ef5b25'],
+                 labels={'value': 'Valor (R$)', 'variable': 'Tipo'})
+    fig_val.update_layout(plot_bgcolor='white', paper_bgcolor='white',
+                          font=dict(size=13, color='black'),
+                          yaxis=dict(showgrid=True, gridcolor="#e8ecf0"),
+                          xaxis=dict(showgrid=False),
+                          legend=dict(title=''), height=380)
+    fig_val.update_yaxes(tickprefix="R$ ", tickformat=",.0f")
+    st.plotly_chart(fig_val, use_container_width=True)
+
+with col_g2:
+    fig_qtd = px.bar(df_status, x='Status', y=['Qtd_Aprovados', 'Qtd_Nao_Aprovados'],
+                 title="Quantidade Aprovada vs Negada por Status",
+                 barmode='group', color_discrete_sequence=['#2ecc71', '#ef5b25'],
+                 labels={'value': 'Quantidade de Clientes', 'variable': 'Tipo'})
+    fig_qtd.update_layout(plot_bgcolor='white', paper_bgcolor='white',
+                          font=dict(size=13, color='black'),
+                          yaxis=dict(showgrid=True, gridcolor="#e8ecf0"),
+                          xaxis=dict(showgrid=False),
+                          legend=dict(title=''), height=380)
+    fig_qtd.for_each_trace(lambda t: t.update(
+        name='Aprovados' if 'Aprovados' in t.name else 'Negados'
+    ))
+    st.plotly_chart(fig_qtd, use_container_width=True)
 
 # --- Análise por Tempo de Mercado ---
 st.markdown("<div class='section-header'>⏳ Análise por Tempo de Mercado</div>", unsafe_allow_html=True)
@@ -550,78 +946,41 @@ col_receita1, col_receita2, col_receita3, col_receita4, col_receita5 = st.column
 
 with col_receita1:
     st.markdown(f"""
-    <div style='
-        background-color: var(--white);
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid var(--sky-green);
-        text-align: center;
-    '>
-        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>ATIVA</p>
-        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_ativo}</h2>
+    <div class='status-card' style='border-left: 5px solid var(--sky-green);'>
+        <p>ATIVA</p>
+        <h2>{status_ativo}</h2>
     </div>
     """, unsafe_allow_html=True)
 
 with col_receita2:
     st.markdown(f"""
-    <div style='
-        background-color: var(--white);
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid var(--sky-orange);
-        text-align: center;
-    '>
-        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>INAPTA</p>
-        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_inapto}</h2>
+    <div class='status-card' style='border-left: 5px solid var(--sky-orange);'>
+        <p>INAPTA</p>
+        <h2>{status_inapto}</h2>
     </div>
     """, unsafe_allow_html=True)
 
 with col_receita3:
     st.markdown(f"""
-    <div style='
-        background-color: var(--white);
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid var(--sky-yellow);
-        text-align: center;
-    '>
-        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>SUSPENSA</p>
-        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_suspenso}</h2>
+    <div class='status-card' style='border-left: 5px solid var(--sky-yellow);'>
+        <p>SUSPENSA</p>
+        <h2>{status_suspenso}</h2>
     </div>
     """, unsafe_allow_html=True)
 
-# NOVO CARD: BAIXADA
 with col_receita4:
     st.markdown(f"""
-    <div style='
-        background-color: var(--white);
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid var(--text-medium);
-        text-align: center;
-    '>
-        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>BAIXADO</p>
-        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_baixado}</h2>
+    <div class='status-card' style='border-left: 5px solid var(--text-light);'>
+        <p>BAIXADO</p>
+        <h2>{status_baixado}</h2>
     </div>
     """, unsafe_allow_html=True)
 
-# CARD OUTROS (AGORA NA COLUNA 5)
 with col_receita5:
     st.markdown(f"""
-    <div style='
-        background-color: var(--white);
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid var(--text-medium);
-        text-align: center;
-    '>
-        <p style='color: var(--text-medium); margin: 0; font-size: 0.9em;'>OUTROS</p>
-        <h2 style='color: var(--text-dark); margin: 5px 0 0 0; font-size: 2.5em; font-weight: 700;'>{status_outros}</h2>
+    <div class='status-card' style='border-left: 5px solid var(--text-light);'>
+        <p>OUTROS</p>
+        <h2>{status_outros}</h2>
     </div>
     """, unsafe_allow_html=True)
 # --- Fim das Métricas de Status da Receita ---
@@ -701,6 +1060,6 @@ st.download_button(
 # --- Rodapé ---
 st.markdown("""
 <div class='footer'>
-    Desenvolvido por Daniel Mendes | Sky Group Brasil
+    Desenvolvido por <strong>Daniel Mendes</strong> &nbsp;·&nbsp; Sky Group Brasil &nbsp;·&nbsp; Dashboard Financeiro v2.0
 </div>
 """, unsafe_allow_html=True)
